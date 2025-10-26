@@ -1,0 +1,170 @@
+diff -Nur ../orig/main.c ./main.c
+--- ../orig/main.c	2023-04-04 22:02:39.549979581 +0200
++++ ./main.c	2023-04-04 22:28:04.990500572 +0200
+@@ -1,4 +1,4 @@
+-
++#include <unistd.h>
+ #include <stdio.h>
+ #include <stdarg.h>
+ #include <errno.h>
+@@ -150,13 +150,6 @@
+ 			zf_push(sin(zf_pop()));
+ 			break;
+ 
+-		case ZF_SYSCALL_USER + 2:
+-			if(input == NULL) {
+-				return ZF_INPUT_PASS_WORD;
+-			}
+-			include(input);
+-			break;
+-		
+ 		case ZF_SYSCALL_USER + 3:
+ 			save("zforth.save");
+ 			break;
+@@ -223,6 +216,8 @@
+ 	int line = 0;
+ 	const char *fname_load = NULL;
+ 
++	sleep(2); setlinebuf(stdout);
++
+ 	/* Parse command line options */
+ 
+ 	while((c = getopt(argc, argv, "hl:t")) != -1) {
+diff -Nur ../orig/Makefile ./Makefile
+--- ../orig/Makefile	2023-04-04 20:48:40.633696789 +0200
++++ ./Makefile	2023-04-04 20:52:03.000000000 +0200
+@@ -5,31 +5,17 @@
+ OBJS    := $(subst .c,.o, $(SRC))
+ DEPS    := $(subst .c,.d, $(SRC))
+ 
+-CC	:= $(CROSS)gcc
+-
+-VPATH   := ../zforth
+-CFLAGS	+= -I. -I../zforth
+-CFLAGS  += -Os -g -pedantic -MMD
+-CFLAGS  += -fsanitize=address -Wall -Wextra -Werror -Wno-unused-parameter -Wno-clobbered -Wno-unused-result
+-LDFLAGS	+= -fsanitize=address -g 
+-
++CC	:= i686-linux-gnu-gcc
++CFLAGS  += -O0 -g -pedantic -MMD
++CFLAGS  += -Wall -Wextra -Werror -Wno-unused-parameter -Wno-clobbered -Wno-unused-result
++LDFLAGS	+= -g 
+ LIBS	+= -lm
+ 
+-ifndef noreadline
+-LIBS	+= -lreadline
+-CFLAGS	+= -DUSE_READLINE
+-endif
+-
+ $(BIN): $(OBJS)
+ 	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+ 
+ clean:
+ 	rm -f $(BIN) $(OBJS) $(DEPS)
+ 
+-lint:
+-	lint -i /opt/flint/supp/lnt -i ..\\zforth -i src -w2 co-gcc.lnt \
+-		-e537 -e451 -e524 -e534 -e641 -e661 -e64 \
+-		$(SRC)
+-
+ -include $(DEPS)
+ 
+diff -Nur ../orig/README.md ./README.md
+--- ../orig/README.md	2023-04-04 20:59:22.208981442 +0200
++++ ./README.md	2023-04-04 21:14:05.000000000 +0200
+@@ -1,4 +1,6 @@
+ 
++# This README was retrieved from https://github.com/zevv/zForth on 2023-04-03
++
+ ![zForth](/zforth.png)
+ 
+ zForth
+@@ -160,6 +162,32 @@
+ ````
+ 
+ 
++Debugging the dictionary
++========================
++
++zForth provides useful PEEK and POKE primitives, for when you want to inspect bytes
++inside the dictionary ("dict"), typically for debugging purposes. The PEEK command
++is very simple: first enter the offset inside the dictionary followed by the size
++of the data to be read, typically 4 and the '@@' keyword (defined in core.zf):
++
++````
++143 4 @@ .
++309357920 
++````
++
++Similarly, POKE allows you to directly modify data inside the dictionary, this time
++the data to be written is first, followed by the offset and the size, and then '!!':
++
++````
++20204 143 3 !!
++143 3 @@ .
++20204
++````
++
++Please be very careful when using PEEK and POKE. They are very powerful commands,
++and their use can lead to undefined behaviour!
++
++
+ Tracing
+ =======
+ 
+diff -Nur ../orig/zfconf.h ./zfconf.h
+--- ../orig/zfconf.h	2023-04-04 20:48:40.633696789 +0200
++++ ./zfconf.h	2023-04-04 19:54:42.000000000 +0200
+@@ -13,7 +13,7 @@
+ /* Set to 1 to add boundary checks to stack operations. Increases .text size
+  * by approx 100 bytes */
+ 
+-#define ZF_ENABLE_BOUNDARY_CHECKS 1
++#define ZF_ENABLE_BOUNDARY_CHECKS 0
+ 
+ 
+ /* Set to 1 to enable bootstrapping of the forth dictionary by adding the
+diff -Nur ../orig/zforth.c ./zforth.c
+--- ../orig/zforth.c	2023-04-04 20:48:40.633696789 +0200
++++ ./zforth.c	2023-04-04 21:24:51.313525549 +0200
+@@ -1,7 +1,7 @@
+-
++#include <stdlib.h>
++#include <stdio.h>
+ #include <ctype.h>
+ #include <string.h>
+-#include <setjmp.h>
+ 
+ #include "zforth.h"
+ 
+@@ -74,10 +74,6 @@
+ static zf_addr rsp;
+ static zf_addr ip;
+ 
+-/* setjmp env for handling aborts */
+-
+-static jmp_buf jmpbuf;
+-
+ /* User variables are variables which are shared between forth and C. From
+  * forth these can be accessed with @ and ! at pseudo-indices in low memory, in
+  * C they are stored in an array of zf_addr with friendly reference names
+@@ -161,7 +157,9 @@
+ 
+ void zf_abort(zf_result reason)
+ {
+-	longjmp(jmpbuf, reason);
++	//longjmp(jmpbuf, reason);
++	printf("zf_abort: %d\n", reason);
++	abort();
+ }
+ 
+ 
+@@ -916,7 +914,7 @@
+ 
+ zf_result zf_eval(const char *buf)
+ {
+-	zf_result r = (zf_result)setjmp(jmpbuf);
++	zf_result r = ZF_OK;//(zf_result)setjmp(jmpbuf);
+ 
+ 	if(r == ZF_OK) {
+ 		for(;;) {

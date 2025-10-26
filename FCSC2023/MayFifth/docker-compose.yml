@@ -1,0 +1,5 @@
+services:
+  may-the-fifth:
+    image: anssi/fcsc2023-pwn-may-the-fifth:latest
+    ports:
+      - "4000:4000"
