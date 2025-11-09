@@ -1,0 +1,5 @@
+services:
+  small-primes-shellcode:
+    image: anssi/fcsc2025-pwn-small-primes-shellcode:latest
+    ports:
+      - 4000:4000

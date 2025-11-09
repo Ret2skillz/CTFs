@@ -1,0 +1,19 @@
+it's aarch64
+
+we need small primes ???
+
+first we start with svc we need for syscall = first we find is svc #19
+
+binary will point in x0 to our shellcode so we can use it for the bin/sh and all ??
+
+hardest is for x8 so we can use ldp for it, and it seems x1 can only be used instead of x0 in instructions
+
+so we can try put 221 in x1 with additions and then str it then load it in x8
+
+then we need put /bin/sh in [x0] the problem is it is not prime so we can try to put it in two times, 
+
+we have a str x3, [sp] so the goal is adding to /bin/sh and in x3 then 
+
+first store sh in x3 and bin - 4 in x15, add 4 to x15, sub 5 to x3 (cos of primes we put in x3) and then add x15 to x3
+
+4h
