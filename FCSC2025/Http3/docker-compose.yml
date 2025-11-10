@@ -1,0 +1,5 @@
+services:
+  http3:
+    image: anssi/fcsc2025-pwn-http3:latest
+    ports:
+      - "4000:4000"

@@ -1,0 +1,10 @@
+services:
+  eraise:
+    image: anssi/fcsc2025-pwn-eraise:latest
+    ports:
+      - "4000:4000"
+
+  shovel-webapp:
+    image: anssi/fcsc2025-pwn-eraise-shovel:latest
+    ports:
+      - "8000:8000"
