@@ -1,0 +1,5 @@
+services:
+  swift-encryptor:
+    image: anssi/fcsc2025-pwn-swift-encryptor:latest
+    ports:
+      - "4000:4000"
