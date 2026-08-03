@@ -1,0 +1,5 @@
+services:
+  not-so-boring:
+    image: anssi/fcsc2026-pwn-not-so-boring:latest
+    ports:
+      - "4000:4000"
