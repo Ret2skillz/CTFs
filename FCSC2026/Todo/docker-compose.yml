@@ -1,0 +1,7 @@
+services:
+  todo:
+    image: anssi/fcsc2026-pwn-todo:latest
+    ports:
+      - "4000:4000"
+    tmpfs:
+      - /app/:rw,uid=1000,exec,gid=1000,mode=300
