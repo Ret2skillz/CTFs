@@ -1,0 +1,7 @@
+services:
+  netsec:
+    image: anssi/fcsc2026-pwn-netsec:latest
+    ports:
+      - "4000:4000"
+    tmpfs:
+      - /fcsc
